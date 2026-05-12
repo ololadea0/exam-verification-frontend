@@ -1,0 +1,87 @@
+.page-loader-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+}
+
+.loader-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 26px;
+
+  border-radius: 20px;
+}
+
+.spinner-ring {
+  width: 112px;
+  height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.spinner-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 8px solid transparent;
+  border-top-color: #b8935f;
+  border-right-color: #b8935f;
+  border-radius: 50%;
+  animation: spin 1.1s linear infinite;
+}
+
+.loader-logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  padding: 8px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+}
+
+.loading-text {
+  color: #b8935f;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .loader-card {
+    padding: 18px 20px;
+  }
+
+  .spinner-ring {
+    width: 92px;
+    height: 92px;
+  }
+
+  .loader-logo {
+    width: 46px;
+    height: 46px;
+    padding: 6px;
+  }
+
+  .loading-text {
+    font-size: 13px;
+  }
+}
