@@ -5,6 +5,11 @@ import { toast } from "sonner";
 import { registerStudent, reset } from "../slices/studentSlice";
 import FACULTIES from "../constants/faculties";
 import captureCompressedImage from "../utils/captureImage";
+import {
+  formatNigerianPhoneNumber,
+  isValidNigerianPhoneNumber,
+  normalizeNigerianPhoneNumber,
+} from "../utils/phoneNumber";
 
 const emptyForm = {
   first_name: "",
@@ -148,7 +153,7 @@ function RegisterStudent() {
 
     setFormData((prevState) => ({
       ...prevState,
-      [name]: value,
+      [name]: name === "phone_number" ? formatNigerianPhoneNumber(value) : value,
       ...(name === "faculty" && { department: "" }),
     }));
   };
@@ -161,6 +166,11 @@ function RegisterStudent() {
       return;
     }
 
+    if (!isValidNigerianPhoneNumber(formData.phone_number)) {
+      toast.error("Please enter a valid Nigerian phone number.");
+      return;
+    }
+
     const payload = {
       name: [
         capitalizeNamePart(formData.first_name),
@@ -170,7 +180,7 @@ function RegisterStudent() {
         .join(" "),
       matric_number: formData.matric_number.trim(),
       department: formData.department.trim(),
-      phone_number: formData.phone_number.trim(),
+      phone_number: normalizeNigerianPhoneNumber(formData.phone_number),
       image: capturedImages[capturedImages.length - 1],
       images: capturedImages,
     };
@@ -188,10 +198,11 @@ function RegisterStudent() {
   return (
     <div>
       <h2 className="text-foreground mb-6">Register Student</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+      <form className="space-y-6" onSubmit={onSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-6">
           <h3 className="text-foreground mb-4">Student Information</h3>
-          <form className="space-y-4" onSubmit={onSubmit}>
+          <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label
@@ -316,22 +327,19 @@ function RegisterStudent() {
                 id="phone_number"
                 name="phone_number"
                 type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                maxLength={17}
+                placeholder="+234 803 123 4567"
                 className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 required
                 value={formData.phone_number}
                 onChange={onChange}
               />
             </div>
-            <button
-              type="submit"
-              disabled={isLoading || capturedImages.length === 0}
-              className="w-full bg-primary text-primary-foreground py-2.5 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Registering..." : "Register Student"}
-            </button>
-          </form>
-        </div>
-        <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+          </div>
+          </div>
+          <div className="bg-card rounded-lg shadow-sm border border-border p-6">
           <h3 className="text-foreground mb-4">Face Capture</h3>
           <div className="space-y-4">
             <div className="relative bg-muted rounded-lg overflow-hidden aspect-video border border-border">
@@ -401,8 +409,16 @@ function RegisterStudent() {
               </div>
             </div>
           </div>
+          </div>
         </div>
-      </div>
+        <button
+          type="submit"
+          disabled={isLoading || capturedImages.length === 0}
+          className="w-full bg-primary text-primary-foreground py-2.5 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? "Registering..." : "Register Student"}
+        </button>
+      </form>
     </div>
   );
 }

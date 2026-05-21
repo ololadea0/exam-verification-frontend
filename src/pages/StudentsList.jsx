@@ -10,6 +10,11 @@ import {
   reset,
 } from "../slices/studentSlice";
 import FACULTIES from "../constants/faculties";
+import {
+  formatNigerianPhoneNumber,
+  isValidNigerianPhoneNumber,
+  normalizeNigerianPhoneNumber,
+} from "../utils/phoneNumber";
 
 const formatDate = (value) => {
   if (!value) {
@@ -53,7 +58,7 @@ const toEditForm = (student) => {
     matric_number: student?.matric_number || "",
     faculty: getFacultyForDepartment(student?.department),
     department: student?.department || "",
-    phone_number: student?.phone_number || "",
+    phone_number: formatNigerianPhoneNumber(student?.phone_number || ""),
   };
 };
 
@@ -128,11 +133,16 @@ function StudentsList() {
         .filter(Boolean)
         .join(" "),
       department: editForm.department.trim(),
-      phone_number: editForm.phone_number.trim(),
+      phone_number: normalizeNigerianPhoneNumber(editForm.phone_number),
     };
 
     if (!payload.name || !payload.department || !payload.phone_number) {
       toast.error("Name, department, and phone number are required.");
+      return;
+    }
+
+    if (!isValidNigerianPhoneNumber(editForm.phone_number)) {
+      toast.error("Please enter a valid Nigerian phone number.");
       return;
     }
 
@@ -386,11 +396,17 @@ function StudentsList() {
                 </label>
                 <input
                   type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  maxLength={17}
+                  placeholder="+234 803 123 4567"
                   value={editForm.phone_number}
                   onChange={(event) =>
                     setEditForm({
                       ...editForm,
-                      phone_number: event.target.value,
+                      phone_number: formatNigerianPhoneNumber(
+                        event.target.value,
+                      ),
                     })
                   }
                   className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
