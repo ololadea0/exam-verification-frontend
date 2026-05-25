@@ -1,7 +1,5 @@
 import "./loading.css";
 
-const logo = "/favicon.svg";
-
 function Loading() {
   return (
     <div className="page-loader-container">

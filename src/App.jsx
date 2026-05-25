@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 import Login from "./pages/Login";
 import RegisterStudent from "./pages/Register";
 import Logs from "./pages/Logs";
+import Attendance from "./pages/Attendance";
 import VerifyStudent from "./pages/VerifyStudent";
 import StudentsList from "./pages/StudentsList";
 import ReregisterFace from "./pages/Re-RegisterFace";
@@ -34,6 +35,7 @@ function App() {
                     element={<ReregisterFace />}
                   />
                   <Route path="logs" element={<Logs />} />
+                  <Route path="attendance" element={<Attendance />} />
                 </Route>
               </Routes>
             </Router>

@@ -1,6 +1,7 @@
 import axios from "axios";
 const BACKEND_URL =
-  "https://exam-verification-backend.onrender.com" || "http://localhost:5000";
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://exam-verification-backend.onrender.com";
 
 const axiosInstance = axios.create({
   baseURL: `${BACKEND_URL}/api`, // Proxy to backend server

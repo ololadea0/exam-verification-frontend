@@ -4,6 +4,7 @@ import {
   Camera,
   Users,
   FileText,
+  CalendarCheck,
   LogOut,
   Menu,
   X,
@@ -124,6 +125,16 @@ function DashBoardLayout() {
               >
                 <FileText className="w-5 h-5" />
                 <span>Logs</span>
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                className={navLinkClass}
+                to="/dashboard/attendance"
+                onClick={closeSidebar}
+              >
+                <CalendarCheck className="w-5 h-5" />
+                <span>Attendance</span>
               </NavLink>
             </li>
           </ul>

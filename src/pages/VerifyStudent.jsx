@@ -27,9 +27,7 @@ function VerifyStudent() {
 
   useEffect(() => {
     if (isSuccess && result) {
-      toast[result.verified ? "success" : "error"](
-        result.verified ? "Student verified" : "Face did not match",
-      );
+      toast[result.verified ? "success" : "error"](getVerificationMessage(result));
     }
   }, [isSuccess, result]);
 
@@ -126,6 +124,12 @@ function VerifyStudent() {
       : null;
 
   const resultStudent = result?.student || {};
+
+  const attendanceStatus = result?.attendance?.marked
+    ? result.attendance.alreadyMarked
+      ? "Attendance was already recorded for today."
+      : "Attendance has been recorded for today."
+    : "Attendance was not recorded.";
 
   return (
     <main className="flex-1 p-6 overflow-auto">
@@ -275,6 +279,26 @@ function VerifyStudent() {
                       ? "Unavailable"
                       : `${confidencePercent}%`}
                   </p>
+                  <p>
+                    <span className="text-muted-foreground">
+                      Verification Message:
+                    </span>{" "}
+                    {getVerificationMessage(result)}
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">
+                      Attendance Status:
+                    </span>{" "}
+                    {attendanceStatus}
+                  </p>
+                  {typeof result.durationMs === "number" ? (
+                    <p>
+                      <span className="text-muted-foreground">
+                        Processing Time:
+                      </span>{" "}
+                      {(result.durationMs / 1000).toFixed(2)} seconds
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -291,5 +315,19 @@ function VerifyStudent() {
     </main>
   );
 }
+
+const getVerificationMessage = (result) => {
+  if (!result) {
+    return "No verification result is available yet.";
+  }
+
+  if (result.message) {
+    return result.message;
+  }
+
+  return result.verified
+    ? "Student verified successfully. Attendance has been recorded."
+    : "Face did not match the selected matric number. Attendance was not recorded.";
+};
 
 export default VerifyStudent;
