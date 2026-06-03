@@ -127,6 +127,9 @@ function Logs() {
                   Department
                 </th>
                 <th className="px-6 py-3 text-left text-foreground">
+                  Course
+                </th>
+                <th className="px-6 py-3 text-left text-foreground">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-foreground">
@@ -155,6 +158,9 @@ function Logs() {
                     </td>
                     <td className="px-6 py-4 text-foreground">
                       {student.department || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-foreground">
+                      {log.course_code || log.course?.course_code || "N/A"}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@ import { Camera, CheckCircle, RotateCcw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { reset, verifyStudent } from "../slices/verifyStudentSlice";
+import { getCourses } from "../slices/courseSlice";
 import captureCompressedImage from "../utils/captureImage";
 
 function VerifyStudent() {
@@ -10,14 +11,22 @@ function VerifyStudent() {
   const { result, isLoading, isError, isSuccess, message } = useSelector(
     (state) => state.verify,
   );
+  const { courses, isLoading: isLoadingCourses } = useSelector(
+    (state) => state.courses,
+  );
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
   const [matricNumber, setMatricNumber] = useState("");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [capturedImage, setCapturedImage] = useState("");
   const [isCameraReady, setIsCameraReady] = useState(false);
+
+  useEffect(() => {
+    dispatch(getCourses());
+  }, [dispatch]);
 
   useEffect(() => {
     if (isError && message) {
@@ -87,6 +96,7 @@ function VerifyStudent() {
   const resetVerification = () => {
     stopCamera();
     setMatricNumber("");
+    setSelectedCourseId("");
     setCapturedImage("");
     dispatch(reset());
   };
@@ -101,6 +111,11 @@ function VerifyStudent() {
       return;
     }
 
+    if (!selectedCourseId) {
+      toast.error("Please select the exam course.");
+      return;
+    }
+
     if (!capturedImage) {
       toast.error("Please capture the student's face before verifying.");
       return;
@@ -109,6 +124,7 @@ function VerifyStudent() {
     await dispatch(
       verifyStudent({
         matric_number: trimmedMatricNumber,
+        course_id: selectedCourseId,
         image: capturedImage,
       }),
     );
@@ -124,6 +140,7 @@ function VerifyStudent() {
       : null;
 
   const resultStudent = result?.student || {};
+  const resultCourse = result?.course || {};
 
   const attendanceStatus = result?.attendance?.marked
     ? result.attendance.alreadyMarked
@@ -139,6 +156,7 @@ function VerifyStudent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-card rounded-lg shadow-sm border border-border p-6">
               <h3 className="text-foreground mb-4">Verification Details</h3>
+              <div className="space-y-4">
               <div>
                 <label
                   className="block text-foreground mb-2"
@@ -156,6 +174,35 @@ function VerifyStudent() {
                   value={matricNumber}
                   onChange={(event) => setMatricNumber(event.target.value)}
                 />
+              </div>
+              <div>
+                <label
+                  className="block text-foreground mb-2"
+                  htmlFor="course_id"
+                >
+                  Exam Course
+                </label>
+                <select
+                  id="course_id"
+                  name="course_id"
+                  className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
+                  required
+                  value={selectedCourseId}
+                  disabled={isLoadingCourses || courses.length === 0}
+                  onChange={(event) => setSelectedCourseId(event.target.value)}
+                >
+                  <option value="">
+                    {courses.length === 0
+                      ? "No courses available"
+                      : "Select exam course"}
+                  </option>
+                  {courses.map((course) => (
+                    <option value={course._id} key={course._id}>
+                      {course.course_code} - {course.course_title}
+                    </option>
+                  ))}
+                </select>
+              </div>
               </div>
             </div>
 
@@ -270,6 +317,12 @@ function VerifyStudent() {
                   <p>
                     <span className="text-muted-foreground">Department:</span>{" "}
                     {resultStudent.department || "Unavailable"}
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Course:</span>{" "}
+                    {resultCourse.course_code
+                      ? `${resultCourse.course_code} - ${resultCourse.course_title}`
+                      : "Unavailable"}
                   </p>
                   <p>
                     <span className="text-muted-foreground">

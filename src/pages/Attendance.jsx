@@ -3,6 +3,7 @@ import { CalendarCheck, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { getAttendance, reset } from "../slices/attendanceSlice";
+import { getCourses } from "../slices/courseSlice";
 
 const formatConfidence = (confidence) => {
   if (typeof confidence !== "number") {
@@ -31,9 +32,15 @@ function Attendance() {
   const { attendance, pagination, isLoading, isError, message } = useSelector(
     (state) => state.attendance,
   );
+  const { courses } = useSelector((state) => state.courses);
   const [searchQuery, setSearchQuery] = useState("");
   const [attendanceDate, setAttendanceDate] = useState("");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    dispatch(getCourses());
+  }, [dispatch]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -43,6 +50,7 @@ function Attendance() {
           limit: pagination.limit,
           search: searchQuery.trim() || undefined,
           date: attendanceDate || undefined,
+          course_id: selectedCourseId || undefined,
         }),
       );
     }, 250);
@@ -50,7 +58,14 @@ function Attendance() {
     return () => {
       clearTimeout(timer);
     };
-  }, [attendanceDate, dispatch, page, pagination.limit, searchQuery]);
+  }, [
+    attendanceDate,
+    dispatch,
+    page,
+    pagination.limit,
+    searchQuery,
+    selectedCourseId,
+  ]);
 
   useEffect(
     () => () => {
@@ -72,6 +87,7 @@ function Attendance() {
         limit: pagination.limit,
         search: searchQuery.trim() || undefined,
         date: attendanceDate || undefined,
+        course_id: selectedCourseId || undefined,
       }),
     );
   };
@@ -92,7 +108,7 @@ function Attendance() {
       </div>
 
       <div className="bg-card rounded-lg shadow-sm border border-border">
-        <div className="grid grid-cols-1 gap-3 p-4 border-b border-border md:grid-cols-[1fr_220px]">
+        <div className="grid grid-cols-1 gap-3 p-4 border-b border-border md:grid-cols-[1fr_220px_260px]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
@@ -116,6 +132,22 @@ function Attendance() {
             className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             aria-label="Filter attendance by date"
           />
+          <select
+            value={selectedCourseId}
+            onChange={(event) => {
+              setSelectedCourseId(event.target.value);
+              setPage(1);
+            }}
+            className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            aria-label="Filter attendance by course"
+          >
+            <option value="">All courses</option>
+            {courses.map((course) => (
+              <option value={course._id} key={course._id}>
+                {course.course_code} - {course.course_title}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="overflow-x-auto">
@@ -130,6 +162,9 @@ function Attendance() {
                 </th>
                 <th className="px-6 py-3 text-left text-foreground">
                   Department
+                </th>
+                <th className="px-6 py-3 text-left text-foreground">
+                  Course
                 </th>
                 <th className="px-6 py-3 text-left text-foreground">
                   Attendance Date
@@ -159,6 +194,11 @@ function Attendance() {
                     </td>
                     <td className="px-6 py-4 text-foreground">
                       {student.department || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-foreground">
+                      {record.course_code ||
+                        record.course?.course_code ||
+                        "N/A"}
                     </td>
                     <td className="px-6 py-4 text-foreground">
                       {record.attendance_date || "Unavailable"}
