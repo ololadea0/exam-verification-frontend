@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookOpen, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { BookOpen, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -22,6 +22,7 @@ function Courses() {
   );
   const [form, setForm] = useState(initialForm);
   const [searchQuery, setSearchQuery] = useState("");
+  const [courseToDelete, setCourseToDelete] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -63,22 +64,64 @@ function Courses() {
     }
   };
 
-  const handleDelete = async (course) => {
-    const confirmed = window.confirm(`Delete ${course.course_code}?`);
-
-    if (!confirmed) {
+  const handleDelete = async () => {
+    if (!courseToDelete?._id) {
       return;
     }
 
-    const action = await dispatch(deleteCourse(course._id));
+    const action = await dispatch(deleteCourse(courseToDelete._id));
 
     if (deleteCourse.fulfilled.match(action)) {
       toast.success("Course deleted successfully");
+      setCourseToDelete(null);
     }
   };
 
   return (
     <div>
+      {courseToDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card shadow-lg">
+            <div className="flex items-center justify-between border-b border-border p-6">
+              <h3 className="text-foreground">Delete Course</h3>
+              <button
+                type="button"
+                onClick={() => setCourseToDelete(null)}
+                className="p-1 hover:bg-accent rounded-md transition-colors"
+                aria-label="Close confirmation"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-foreground">
+                Delete {courseToDelete.course_code}?
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 border-t border-border p-6">
+              <button
+                type="button"
+                onClick={() => setCourseToDelete(null)}
+                className="flex-1 border border-border py-2.5 rounded-md hover:bg-accent transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isLoading}
+                className="flex-1 bg-destructive text-destructive-foreground py-2.5 rounded-md hover:bg-destructive/90 transition-colors disabled:opacity-50"
+              >
+                {isLoading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-foreground">Courses</h2>
         <button
@@ -216,7 +259,7 @@ function Courses() {
                     <td className="px-6 py-4">
                       <button
                         type="button"
-                        onClick={() => handleDelete(course)}
+                        onClick={() => setCourseToDelete(course)}
                         disabled={isLoading}
                         className="p-2 text-muted-foreground hover:text-destructive hover:bg-accent rounded-md transition-colors disabled:opacity-50"
                         title="Delete course"

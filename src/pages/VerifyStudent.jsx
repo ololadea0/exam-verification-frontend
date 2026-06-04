@@ -129,23 +129,15 @@ function VerifyStudent() {
     );
   };
 
-  const confidencePercent =
-    typeof result?.confidence === "number"
-      ? Math.round(
-          result.confidence <= 1
-            ? result.confidence * 100
-            : result.confidence,
-        )
-      : null;
-
   const resultStudent = result?.student || {};
   const resultCourse = result?.course || {};
 
   const attendanceStatus = result?.attendance?.marked
     ? result.attendance.alreadyMarked
-      ? "Attendance was already recorded for today."
-      : "Attendance has been recorded for today."
-    : "Attendance was not recorded.";
+      ? "Already recorded"
+      : "Recorded"
+    : "Not recorded";
+  const verificationTime = formatDurationMs(result?.durationMs);
 
   return (
     <main className="flex-1 p-6 overflow-auto">
@@ -325,32 +317,16 @@ function VerifyStudent() {
                   </p>
                   <p>
                     <span className="text-muted-foreground">
-                      Confidence Score:
-                    </span>{" "}
-                    {confidencePercent === null
-                      ? "Unavailable"
-                      : `${confidencePercent}%`}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">
-                      Verification Message:
-                    </span>{" "}
-                    {getVerificationMessage(result)}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">
-                      Attendance Status:
+                      Attendance:
                     </span>{" "}
                     {attendanceStatus}
                   </p>
-                  {typeof result.durationMs === "number" ? (
-                    <p>
-                      <span className="text-muted-foreground">
-                        Processing Time:
-                      </span>{" "}
-                      {(result.durationMs / 1000).toFixed(2)} seconds
-                    </p>
-                  ) : null}
+                  <p>
+                    <span className="text-muted-foreground">
+                      Verification Time:
+                    </span>{" "}
+                    {verificationTime}
+                  </p>
                 </div>
               </div>
             </div>
@@ -373,13 +349,26 @@ const getVerificationMessage = (result) => {
     return "No verification result is available yet.";
   }
 
+  const verificationTime = formatDurationMs(result.durationMs);
+  const timeMessage = verificationTime !== "Unavailable"
+    ? ` Time used: ${verificationTime}.`
+    : "";
+
   if (result.message) {
-    return result.message;
+    return `${result.message}${timeMessage}`;
   }
 
-  return result.verified
-    ? "Student verified successfully. Attendance has been recorded."
-    : "Face did not match the selected matric number. Attendance was not recorded.";
+  return `${result.verified ? "Verified" : "Not verified"}${timeMessage}`;
+};
+
+const formatDurationMs = (durationMs) => {
+  const value = Number(durationMs);
+
+  if (!Number.isFinite(value)) {
+    return "Unavailable";
+  }
+
+  return `${Math.round(value * 100) / 100} ms`;
 };
 
 export default VerifyStudent;

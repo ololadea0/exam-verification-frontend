@@ -67,6 +67,7 @@ function StudentsList() {
   const [page, setPage] = useState(1);
   const [viewStudent, setViewStudent] = useState(null);
   const [editStudentRecord, setEditStudentRecord] = useState(null);
+  const [studentToDelete, setStudentToDelete] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const selectedEditFaculty = FACULTIES.find(
     (faculty) => faculty.name === editForm?.faculty,
@@ -149,18 +150,10 @@ function StudentsList() {
     });
   };
 
-  const handleDelete = async (student) => {
-    const id = getStudentId(student);
+  const handleDelete = async () => {
+    const id = getStudentId(studentToDelete);
 
     if (!id) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Delete ${student.name}? This cannot be undone.`,
-    );
-
-    if (!confirmed) {
       return;
     }
 
@@ -168,6 +161,7 @@ function StudentsList() {
 
     if (deleteStudent.fulfilled.match(action)) {
       toast.success("Student deleted successfully");
+      setStudentToDelete(null);
       dispatch(reset());
     }
   };
@@ -194,6 +188,49 @@ function StudentsList() {
           Refresh
         </button>
       </div>
+
+      {studentToDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card shadow-lg">
+            <div className="flex items-center justify-between border-b border-border p-6">
+              <h3 className="text-foreground">Delete Student</h3>
+              <button
+                type="button"
+                onClick={() => setStudentToDelete(null)}
+                className="p-1 hover:bg-accent rounded-md transition-colors"
+                aria-label="Close confirmation"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-foreground">
+                Delete {studentToDelete.name}?
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 border-t border-border p-6">
+              <button
+                type="button"
+                onClick={() => setStudentToDelete(null)}
+                className="flex-1 border border-border py-2.5 rounded-md hover:bg-accent transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isLoading}
+                className="flex-1 bg-destructive text-destructive-foreground py-2.5 rounded-md hover:bg-destructive/90 transition-colors disabled:opacity-50"
+              >
+                {isLoading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {viewStudent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -472,7 +509,7 @@ function StudentsList() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(student)}
+                        onClick={() => setStudentToDelete(student)}
                         disabled={isLoading}
                         className="p-2 text-muted-foreground hover:text-destructive hover:bg-accent rounded-md transition-colors disabled:opacity-50"
                         title="Delete Student"

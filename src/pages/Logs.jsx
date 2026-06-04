@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle, RefreshCw, Search, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
-import { getLogs, reset } from "../slices/logSlice";
+import { getLogs, getTimingSummary, reset } from "../slices/logSlice";
 
 const formatConfidence = (confidence) => {
   if (typeof confidence !== "number") {
@@ -40,13 +40,35 @@ const formatDate = (value) => {
   }).format(new Date(value));
 };
 
+const formatMetricMs = (value) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "0";
+  }
+
+  return String(Math.round(number * 100) / 100);
+};
+
 function Logs() {
   const dispatch = useDispatch();
-  const { logs, pagination, isLoading, isError, message } = useSelector(
+  const {
+    logs,
+    pagination,
+    timingSummary,
+    isLoading,
+    isLoadingTimingSummary,
+    isError,
+    message,
+  } = useSelector(
     (state) => state.logs,
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    dispatch(getTimingSummary());
+  }, [dispatch]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -80,21 +102,76 @@ function Logs() {
         <h2 className="text-foreground">Verification Logs</h2>
         <button
           type="button"
-          onClick={() =>
+          onClick={() => {
+            dispatch(getTimingSummary());
             dispatch(
               getLogs({
                 page,
                 limit: pagination.limit,
                 search: searchQuery.trim() || undefined,
               }),
-            )
-          }
+            );
+          }}
           disabled={isLoading}
           className="inline-flex items-center gap-2 px-4 py-2.5 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           Refresh
         </button>
+      </div>
+
+      <div className="bg-card rounded-lg shadow-sm border border-border mb-6">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-foreground">Verification Timing Summary</h3>
+            <p className="text-sm text-muted-foreground">
+              {timingSummary?.attempts || 0} successful verification attempts
+            </p>
+          </div>
+          {isLoadingTimingSummary ? (
+            <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+          ) : null}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-accent border-b border-border">
+              <tr>
+                <th className="px-6 py-3 text-left text-foreground">Stage</th>
+                <th className="px-6 py-3 text-left text-foreground">
+                  Minimum Time (ms)
+                </th>
+                <th className="px-6 py-3 text-left text-foreground">
+                  Maximum Time (ms)
+                </th>
+                <th className="px-6 py-3 text-left text-foreground">
+                  Mean Time (μ) (ms)
+                </th>
+                <th className="px-6 py-3 text-left text-foreground">
+                  Standard Deviation (σ)
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {(timingSummary?.stages || []).map((stage) => (
+                <tr key={stage.stage} className="hover:bg-accent/50">
+                  <td className="px-6 py-4 text-foreground">{stage.stage}</td>
+                  <td className="px-6 py-4 text-foreground">
+                    {formatMetricMs(stage.min_ms)}
+                  </td>
+                  <td className="px-6 py-4 text-foreground">
+                    {formatMetricMs(stage.max_ms)}
+                  </td>
+                  <td className="px-6 py-4 text-foreground">
+                    {formatMetricMs(stage.mean_ms)}
+                  </td>
+                  <td className="px-6 py-4 text-foreground">
+                    {formatMetricMs(stage.std_dev_ms)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="bg-card rounded-lg shadow-sm border border-border">

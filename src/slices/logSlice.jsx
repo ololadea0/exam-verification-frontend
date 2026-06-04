@@ -9,6 +9,12 @@ const initialState = {
     total: 0,
     pages: 1,
   },
+  timingSummary: {
+    attempts: 0,
+    successfulOnly: true,
+    stages: [],
+  },
+  isLoadingTimingSummary: false,
   isLoading: false,
   isError: false,
   isSuccess: false,
@@ -25,6 +31,18 @@ export const getLogs = createAsyncThunk("logs/getAll", async (params, thunkAPI) 
     return thunkAPI.rejectWithValue(message);
   }
 });
+
+export const getTimingSummary = createAsyncThunk(
+  "logs/getTimingSummary",
+  async (params, thunkAPI) => {
+    try {
+      return await logService.getTimingSummary(params);
+    } catch (error) {
+      const message = error.message || "An unknown error occurred.";
+      return thunkAPI.rejectWithValue(message);
+    }
+  },
+);
 
 export const logSlice = createSlice({
   name: "logs",
@@ -53,6 +71,18 @@ export const logSlice = createSlice({
       })
       .addCase(getLogs.rejected, (state, action) => {
         state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      .addCase(getTimingSummary.pending, (state) => {
+        state.isLoadingTimingSummary = true;
+      })
+      .addCase(getTimingSummary.fulfilled, (state, action) => {
+        state.isLoadingTimingSummary = false;
+        state.timingSummary = action.payload || state.timingSummary;
+      })
+      .addCase(getTimingSummary.rejected, (state, action) => {
+        state.isLoadingTimingSummary = false;
         state.isError = true;
         state.message = action.payload;
       });

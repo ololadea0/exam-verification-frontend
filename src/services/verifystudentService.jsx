@@ -3,7 +3,11 @@ import axiosInstance from "./axiosInstance";
 const API_BASE_URL = "/verify-student";
 
 const getErrorMessage = (error) => {
-  const details = error?.response?.data?.details;
+  if (error?.code === "ECONNABORTED") {
+    return "Verification exceeded the 10-second processing limit. Please try again.";
+  }
+
+  const details = error?.response?.data?.details || error?.response?.data?.debug;
   const message =
     error?.response?.data?.message ||
     error.message ||
@@ -20,7 +24,9 @@ const getErrorMessage = (error) => {
 
 const verifyStudent = async (studentData) => {
   try {
-    const response = await axiosInstance.post(API_BASE_URL, studentData);
+    const response = await axiosInstance.post(API_BASE_URL, studentData, {
+      timeout: 10000,
+    });
     return response.data;
   } catch (error) {
     throw new Error(getErrorMessage(error), { cause: error });

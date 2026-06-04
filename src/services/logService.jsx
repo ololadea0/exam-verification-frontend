@@ -19,6 +19,17 @@ const getLogs = async (params = {}) => {
   }
 };
 
-const logService = { getLogs };
+const getTimingSummary = async (params = {}) => {
+  try {
+    const response = await axiosInstance.get(`${API_BASE_URL}/timing-summary`, {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error), { cause: error });
+  }
+};
+
+const logService = { getLogs, getTimingSummary };
 
 export default logService;

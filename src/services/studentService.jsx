@@ -4,7 +4,7 @@ const API_BASE_URL = "/students";
 
 // Helper function to extract error message
 const getErrorMessage = (error) => {
-  const details = error?.response?.data?.details;
+  const details = error?.response?.data?.details || error?.response?.data?.debug;
   const message =
     error?.response?.data?.message ||
     error.message ||
