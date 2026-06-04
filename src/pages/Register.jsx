@@ -5,11 +5,6 @@ import { toast } from "sonner";
 import { registerStudent, reset } from "../slices/studentSlice";
 import FACULTIES from "../constants/faculties";
 import captureCompressedImage from "../utils/captureImage";
-import {
-  formatNigerianPhoneNumber,
-  isValidNigerianPhoneNumber,
-  normalizeNigerianPhoneNumber,
-} from "../utils/phoneNumber";
 
 const emptyForm = {
   first_name: "",
@@ -17,7 +12,6 @@ const emptyForm = {
   matric_number: "",
   faculty: "",
   department: "",
-  phone_number: "",
 };
 
 const CAPTURE_LIMIT = 5;
@@ -153,7 +147,7 @@ function RegisterStudent() {
 
     setFormData((prevState) => ({
       ...prevState,
-      [name]: name === "phone_number" ? formatNigerianPhoneNumber(value) : value,
+      [name]: value,
       ...(name === "faculty" && { department: "" }),
     }));
   };
@@ -166,11 +160,6 @@ function RegisterStudent() {
       return;
     }
 
-    if (!isValidNigerianPhoneNumber(formData.phone_number)) {
-      toast.error("Please enter a valid Nigerian phone number.");
-      return;
-    }
-
     const payload = {
       name: [
         capitalizeNamePart(formData.first_name),
@@ -180,7 +169,6 @@ function RegisterStudent() {
         .join(" "),
       matric_number: formData.matric_number.trim(),
       department: formData.department.trim(),
-      phone_number: normalizeNigerianPhoneNumber(formData.phone_number),
       image: capturedImages[capturedImages.length - 1],
       images: capturedImages,
     };
@@ -315,27 +303,6 @@ function RegisterStudent() {
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label
-                className="block text-foreground mb-2"
-                htmlFor="phone_number"
-              >
-                Phone Number
-              </label>
-              <input
-                id="phone_number"
-                name="phone_number"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                maxLength={17}
-                placeholder="+234 803 123 4567"
-                className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                required
-                value={formData.phone_number}
-                onChange={onChange}
-              />
             </div>
           </div>
           </div>

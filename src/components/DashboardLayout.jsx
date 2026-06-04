@@ -6,7 +6,6 @@ import {
   FileText,
   CalendarCheck,
   BookOpen,
-  ShieldCheck,
   LogOut,
   Menu,
   X,
@@ -147,16 +146,6 @@ function DashBoardLayout() {
               >
                 <CalendarCheck className="w-5 h-5" />
                 <span>Attendance</span>
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                className={navLinkClass}
-                to="/dashboard/audit-trail"
-                onClick={closeSidebar}
-              >
-                <ShieldCheck className="w-5 h-5" />
-                <span>Audit Trail</span>
               </NavLink>
             </li>
           </ul>

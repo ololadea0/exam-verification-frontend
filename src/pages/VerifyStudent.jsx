@@ -96,7 +96,6 @@ function VerifyStudent() {
   const resetVerification = () => {
     stopCamera();
     setMatricNumber("");
-    setSelectedCourseId("");
     setCapturedImage("");
     dispatch(reset());
   };
@@ -157,52 +156,52 @@ function VerifyStudent() {
             <div className="bg-card rounded-lg shadow-sm border border-border p-6">
               <h3 className="text-foreground mb-4">Verification Details</h3>
               <div className="space-y-4">
-              <div>
-                <label
-                  className="block text-foreground mb-2"
-                  htmlFor="matric_number"
-                >
-                  Matric Number
-                </label>
-                <input
-                  id="matric_number"
-                  name="matric_number"
-                  type="text"
-                  placeholder="Enter Matric Number"
-                  className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                  value={matricNumber}
-                  onChange={(event) => setMatricNumber(event.target.value)}
-                />
-              </div>
-              <div>
-                <label
-                  className="block text-foreground mb-2"
-                  htmlFor="course_id"
-                >
-                  Exam Course
-                </label>
-                <select
-                  id="course_id"
-                  name="course_id"
-                  className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
-                  required
-                  value={selectedCourseId}
-                  disabled={isLoadingCourses || courses.length === 0}
-                  onChange={(event) => setSelectedCourseId(event.target.value)}
-                >
-                  <option value="">
-                    {courses.length === 0
-                      ? "No courses available"
-                      : "Select exam course"}
-                  </option>
-                  {courses.map((course) => (
-                    <option value={course._id} key={course._id}>
-                      {course.course_code} - {course.course_title}
+                <div>
+                  <label
+                    className="block text-foreground mb-2"
+                    htmlFor="course_id"
+                  >
+                    Exam Course
+                  </label>
+                  <select
+                    id="course_id"
+                    name="course_id"
+                    className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
+                    required
+                    value={selectedCourseId}
+                    disabled={isLoadingCourses || courses.length === 0}
+                    onChange={(event) => setSelectedCourseId(event.target.value)}
+                  >
+                    <option value="">
+                      {courses.length === 0
+                        ? "No courses available"
+                        : "Select exam course"}
                     </option>
-                  ))}
-                </select>
-              </div>
+                    {courses.map((course) => (
+                      <option value={course._id} key={course._id}>
+                        {course.course_code} - {course.course_title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    className="block text-foreground mb-2"
+                    htmlFor="matric_number"
+                  >
+                    Matric Number
+                  </label>
+                  <input
+                    id="matric_number"
+                    name="matric_number"
+                    type="text"
+                    placeholder="Enter Matric Number"
+                    className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                    value={matricNumber}
+                    onChange={(event) => setMatricNumber(event.target.value)}
+                  />
+                </div>
               </div>
             </div>
 

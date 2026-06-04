@@ -10,11 +10,6 @@ import {
   reset,
 } from "../slices/studentSlice";
 import FACULTIES from "../constants/faculties";
-import {
-  formatNigerianPhoneNumber,
-  isValidNigerianPhoneNumber,
-  normalizeNigerianPhoneNumber,
-} from "../utils/phoneNumber";
 
 const formatDate = (value) => {
   if (!value) {
@@ -58,7 +53,6 @@ const toEditForm = (student) => {
     matric_number: student?.matric_number || "",
     faculty: getFacultyForDepartment(student?.department),
     department: student?.department || "",
-    phone_number: formatNigerianPhoneNumber(student?.phone_number || ""),
   };
 };
 
@@ -133,16 +127,10 @@ function StudentsList() {
         .filter(Boolean)
         .join(" "),
       department: editForm.department.trim(),
-      phone_number: normalizeNigerianPhoneNumber(editForm.phone_number),
     };
 
-    if (!payload.name || !payload.department || !payload.phone_number) {
-      toast.error("Name, department, and phone number are required.");
-      return;
-    }
-
-    if (!isValidNigerianPhoneNumber(editForm.phone_number)) {
-      toast.error("Please enter a valid Nigerian phone number.");
+    if (!payload.name || !payload.department) {
+      toast.error("Name and department are required.");
       return;
     }
 
@@ -238,14 +226,6 @@ function StudentsList() {
                   Department
                 </label>
                 <p className="text-foreground">{viewStudent.department}</p>
-              </div>
-              <div>
-                <label className="text-muted-foreground text-sm">
-                  Phone Number
-                </label>
-                <p className="text-foreground">
-                  {viewStudent.phone_number || "Unavailable"}
-                </p>
               </div>
               <div>
                 <label className="text-muted-foreground text-sm">
@@ -390,28 +370,6 @@ function StudentsList() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-foreground mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  maxLength={17}
-                  placeholder="+234 803 123 4567"
-                  value={editForm.phone_number}
-                  onChange={(event) =>
-                    setEditForm({
-                      ...editForm,
-                      phone_number: formatNigerianPhoneNumber(
-                        event.target.value,
-                      ),
-                    })
-                  }
-                  className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
               <div className="bg-accent border border-border rounded-md p-4">
                 <p className="text-muted-foreground text-sm">
                   <strong>Note:</strong> biometric data is captured from the
@@ -451,7 +409,7 @@ function StudentsList() {
                 setSearchQuery(event.target.value);
                 setPage(1);
               }}
-              placeholder="Search by name, matric number, department, or phone..."
+              placeholder="Search by name, matric number, or department..."
               className="w-full pl-10 pr-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -467,9 +425,6 @@ function StudentsList() {
                 </th>
                 <th className="px-6 py-3 text-left text-foreground">
                   Department
-                </th>
-                <th className="px-6 py-3 text-left text-foreground">
-                  Phone
                 </th>
                 <th className="px-6 py-3 text-left text-foreground">
                   Actions
@@ -488,9 +443,6 @@ function StudentsList() {
                   </td>
                   <td className="px-6 py-4 text-foreground">
                     {student.department}
-                  </td>
-                  <td className="px-6 py-4 text-foreground">
-                    {student.phone_number || "N/A"}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
