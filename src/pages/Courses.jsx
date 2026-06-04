@@ -12,7 +12,6 @@ import {
 const initialForm = {
   course_code: "",
   course_title: "",
-  department: "",
 };
 
 function Courses() {
@@ -48,7 +47,6 @@ function Courses() {
     const payload = {
       course_code: form.course_code.trim().toUpperCase(),
       course_title: form.course_title.trim(),
-      department: form.department.trim(),
     };
 
     if (!payload.course_code || !payload.course_title) {
@@ -185,21 +183,6 @@ function Courses() {
               className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-          <div>
-            <label className="block text-foreground mb-2" htmlFor="department">
-              Department
-            </label>
-            <input
-              id="department"
-              type="text"
-              value={form.department}
-              onChange={(event) =>
-                setForm({ ...form, department: event.target.value })
-              }
-              placeholder="Computer Science"
-              className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
           <button
             type="submit"
             disabled={isLoading}
@@ -234,9 +217,6 @@ function Courses() {
                     Title
                   </th>
                   <th className="px-6 py-3 text-left text-foreground">
-                    Department
-                  </th>
-                  <th className="px-6 py-3 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -252,9 +232,6 @@ function Courses() {
                     </td>
                     <td className="px-6 py-4 text-foreground">
                       {course.course_title}
-                    </td>
-                    <td className="px-6 py-4 text-foreground">
-                      {course.department || "N/A"}
                     </td>
                     <td className="px-6 py-4">
                       <button
