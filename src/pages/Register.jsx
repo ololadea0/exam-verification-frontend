@@ -25,6 +25,16 @@ const capitalizeNamePart = (value) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(" ");
 
+const formatDurationMs = (durationMs) => {
+  const value = Number(durationMs);
+
+  if (!Number.isFinite(value)) {
+    return "Unavailable";
+  }
+
+  return `${Math.round(value * 100) / 100} ms`;
+};
+
 function RegisterStudent() {
   const dispatch = useDispatch();
   const { isLoading, isError, message } = useSelector(
@@ -176,7 +186,11 @@ function RegisterStudent() {
     const action = await dispatch(registerStudent(payload));
 
     if (registerStudent.fulfilled.match(action)) {
-      toast.success("Student registered successfully");
+      toast.success(
+        `Student registered successfully. Time used: ${formatDurationMs(
+          action.payload?.durationMs,
+        )}.`,
+      );
       setFormData(emptyForm);
       resetCapture();
       dispatch(reset());
