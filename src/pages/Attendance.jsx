@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
@@ -27,6 +27,11 @@ const formatDateTime = (value) => {
   }).format(new Date(value));
 };
 
+const getRecordCourse = (record) => ({
+  code: record.course_code || record.course?.course_code || "N/A",
+  title: record.course_title || record.course?.course_title || "Untitled Course",
+});
+
 function Attendance() {
   const dispatch = useDispatch();
   const { attendance, pagination, isLoading, isError, message } = useSelector(
@@ -37,6 +42,28 @@ function Attendance() {
   const [attendanceDate, setAttendanceDate] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [page, setPage] = useState(1);
+  const groupedAttendance = useMemo(() => {
+    const groups = new Map();
+
+    attendance.forEach((record) => {
+      const course = getRecordCourse(record);
+      const key = `${course.code}::${course.title}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          course,
+          records: [],
+        });
+      }
+
+      groups.get(key).records.push(record);
+    });
+
+    return Array.from(groups.values()).sort((groupA, groupB) =>
+      groupA.course.code.localeCompare(groupB.course.code),
+    );
+  }, [attendance]);
 
   useEffect(() => {
     dispatch(getCourses());
@@ -150,70 +177,83 @@ function Attendance() {
           </select>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-accent border-b border-border">
-              <tr>
-                <th className="px-6 py-3 text-left text-foreground">
-                  Student
-                </th>
-                <th className="px-6 py-3 text-left text-foreground">
-                  Matric Number
-                </th>
-                <th className="px-6 py-3 text-left text-foreground">
-                  Department
-                </th>
-                <th className="px-6 py-3 text-left text-foreground">
-                  Course
-                </th>
-                <th className="px-6 py-3 text-left text-foreground">
-                  Attendance Date
-                </th>
-                <th className="px-6 py-3 text-left text-foreground">
-                  Verified At
-                </th>
-                <th className="px-6 py-3 text-left text-foreground">
-                  Confidence
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {attendance.map((record) => {
-                const student = record.student || {};
+        <div className="divide-y divide-border">
+          {groupedAttendance.map((group) => (
+            <section key={group.key}>
+              <div className="flex flex-col gap-1 bg-accent/60 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-foreground">
+                    {group.course.code} - {group.course.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {group.records.length} attendance record
+                    {group.records.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="border-b border-border">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-foreground">
+                        Student
+                      </th>
+                      <th className="px-6 py-3 text-left text-foreground">
+                        Matric Number
+                      </th>
+                      <th className="px-6 py-3 text-left text-foreground">
+                        Department
+                      </th>
+                      <th className="px-6 py-3 text-left text-foreground">
+                        Attendance Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-foreground">
+                        Verified At
+                      </th>
+                      <th className="px-6 py-3 text-left text-foreground">
+                        Confidence
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {group.records.map((record) => {
+                      const student = record.student || {};
 
-                return (
-                  <tr
-                    key={record._id}
-                    className="hover:bg-accent/50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-foreground">
-                      {student.name || "Unknown Student"}
-                    </td>
-                    <td className="px-6 py-4 text-foreground">
-                      {record.matric_number || student.matric_number || "N/A"}
-                    </td>
-                    <td className="px-6 py-4 text-foreground">
-                      {student.department || "N/A"}
-                    </td>
-                    <td className="px-6 py-4 text-foreground">
-                      {record.course_code ||
-                        record.course?.course_code ||
-                        "N/A"}
-                    </td>
-                    <td className="px-6 py-4 text-foreground">
-                      {record.attendance_date || "Unavailable"}
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {formatDateTime(record.verified_at || record.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 text-green-700">
-                      {formatConfidence(record.confidence)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      return (
+                        <tr
+                          key={record._id}
+                          className="hover:bg-accent/50 transition-colors"
+                        >
+                          <td className="px-6 py-4 text-foreground">
+                            {student.name || "Unknown Student"}
+                          </td>
+                          <td className="px-6 py-4 text-foreground">
+                            {record.matric_number ||
+                              student.matric_number ||
+                              "N/A"}
+                          </td>
+                          <td className="px-6 py-4 text-foreground">
+                            {student.department || "N/A"}
+                          </td>
+                          <td className="px-6 py-4 text-foreground">
+                            {record.attendance_date || "Unavailable"}
+                          </td>
+                          <td className="px-6 py-4 text-muted-foreground">
+                            {formatDateTime(
+                              record.verified_at || record.createdAt,
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-green-700">
+                            {formatConfidence(record.confidence)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
         </div>
 
         {!isLoading && attendance.length === 0 ? (

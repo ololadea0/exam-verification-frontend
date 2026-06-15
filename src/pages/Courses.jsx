@@ -8,11 +8,16 @@ import {
   getCourses,
   reset,
 } from "../slices/courseSlice";
+import FACULTIES from "../constants/faculties";
+import { getCourseOptionsForDepartment } from "../constants/courseCatalog";
 
 const initialForm = {
+  department: "",
   course_code: "",
   course_title: "",
 };
+
+const departments = FACULTIES.flatMap((faculty) => faculty.departments);
 
 function Courses() {
   const dispatch = useDispatch();
@@ -22,6 +27,7 @@ function Courses() {
   const [form, setForm] = useState(initialForm);
   const [searchQuery, setSearchQuery] = useState("");
   const [courseToDelete, setCourseToDelete] = useState(null);
+  const courseOptions = getCourseOptionsForDepartment(form.department);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -47,10 +53,11 @@ function Courses() {
     const payload = {
       course_code: form.course_code.trim().toUpperCase(),
       course_title: form.course_title.trim(),
+      department: form.department.trim(),
     };
 
-    if (!payload.course_code || !payload.course_title) {
-      toast.error("Course code and course title are required.");
+    if (!payload.department || !payload.course_code || !payload.course_title) {
+      toast.error("Department and course are required.");
       return;
     }
 
@@ -145,43 +152,72 @@ function Courses() {
             <h3 className="text-foreground">Add Course</h3>
           </div>
           <div>
-            <label className="block text-foreground mb-2" htmlFor="course_code">
-              Course Code
+            <label className="block text-foreground mb-2" htmlFor="department">
+              Department
             </label>
-            <input
-              id="course_code"
-              type="text"
-              value={form.course_code}
+            <select
+              id="department"
+              value={form.department}
               onChange={(event) =>
-                setForm({ ...form, course_code: event.target.value })
-              }
-              onBlur={(event) =>
                 setForm({
                   ...form,
-                  course_code: event.target.value.trim().toUpperCase(),
+                  department: event.target.value,
+                  course_code: "",
+                  course_title: "",
                 })
               }
-              placeholder="CSE501"
               className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+            >
+              <option value="">Select department</option>
+              {departments.map((department) => (
+                <option value={department} key={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label
               className="block text-foreground mb-2"
-              htmlFor="course_title"
+              htmlFor="course"
             >
-              Course Title
+              Course
             </label>
-            <input
-              id="course_title"
-              type="text"
-              value={form.course_title}
-              onChange={(event) =>
-                setForm({ ...form, course_title: event.target.value })
+            <select
+              id="course"
+              value={
+                form.course_code
+                  ? `${form.course_code}::${form.course_title}`
+                  : ""
               }
-              placeholder="Artificial Intelligence"
-              className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+              disabled={!form.department}
+              onChange={(event) => {
+                const selectedCourse = courseOptions.find(
+                  (course) =>
+                    `${course.course_code}::${course.course_title}` ===
+                    event.target.value,
+                );
+
+                setForm({
+                  ...form,
+                  course_code: selectedCourse?.course_code || "",
+                  course_title: selectedCourse?.course_title || "",
+                });
+              }}
+              className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                {form.department ? "Select course" : "Select department first"}
+              </option>
+              {courseOptions.map((course) => (
+                <option
+                  value={`${course.course_code}::${course.course_title}`}
+                  key={`${form.department}-${course.course_code}`}
+                >
+                  {course.course_code} - {course.course_title}
+                </option>
+              ))}
+            </select>
           </div>
           <button
             type="submit"
@@ -217,6 +253,9 @@ function Courses() {
                     Title
                   </th>
                   <th className="px-6 py-3 text-left text-foreground">
+                    Department
+                  </th>
+                  <th className="px-6 py-3 text-left text-foreground">
                     Actions
                   </th>
                 </tr>
@@ -232,6 +271,9 @@ function Courses() {
                     </td>
                     <td className="px-6 py-4 text-foreground">
                       {course.course_title}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      {course.department || "N/A"}
                     </td>
                     <td className="px-6 py-4">
                       <button
