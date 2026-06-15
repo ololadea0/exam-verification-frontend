@@ -8,10 +8,11 @@ import {
   reset,
   reregisterStudentFace,
 } from "../slices/studentSlice";
-import captureCompressedImage from "../utils/captureImage";
+import { captureQualityCheckedImage } from "../utils/captureImage";
 
 const CAPTURE_LIMIT = 5;
 const CAPTURE_INTERVAL_MS = 2000;
+const MAX_CAPTURE_ATTEMPTS = 12;
 
 const getStudentId = (student) => student?._id || student?.id;
 
@@ -30,6 +31,7 @@ function ReregisterFace() {
   const captureTimerRef = useRef(null);
 
   const [capturedImages, setCapturedImages] = useState([]);
+  const [captureFeedback, setCaptureFeedback] = useState("");
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
 
@@ -63,6 +65,7 @@ function ReregisterFace() {
   const resetCapture = useCallback(() => {
     clearCaptureTimer();
     setCapturedImages([]);
+    setCaptureFeedback("");
     setIsCapturing(false);
   }, [clearCaptureTimer]);
 
@@ -105,8 +108,10 @@ function ReregisterFace() {
       }
 
       setIsCameraReady(true);
+      return true;
     } catch {
       toast.error("Unable to access camera. Please allow camera permission.");
+      return false;
     }
   };
 
@@ -118,33 +123,57 @@ function ReregisterFace() {
       return null;
     }
 
-    return captureCompressedImage(video, canvas);
+    return captureQualityCheckedImage(video, canvas);
   };
 
   const startAutoCapture = async () => {
     if (!isCameraReady) {
-      await startCamera();
+      const started = await startCamera();
+
+      if (!started) {
+        return;
+      }
     }
 
     clearCaptureTimer();
     setCapturedImages([]);
+    setCaptureFeedback("Hold steady while the camera checks image quality.");
     setIsCapturing(true);
 
     let count = 0;
+    let attempts = 0;
     captureTimerRef.current = setInterval(() => {
-      const image = captureImage();
+      const capture = captureImage();
+      attempts += 1;
 
-      if (image) {
+      if (capture?.quality?.isAcceptable) {
         count += 1;
-        setCapturedImages((prevImages) =>
-          [...prevImages, image].slice(0, CAPTURE_LIMIT),
+        setCaptureFeedback(
+          `Accepted frame ${count}/${CAPTURE_LIMIT}. Keep the face steady.`,
         );
+        setCapturedImages((prevImages) =>
+          [...prevImages, capture.image].slice(0, CAPTURE_LIMIT),
+        );
+      } else if (capture?.quality?.issues?.length) {
+        const feedback = capture.quality.issues[0];
+        setCaptureFeedback(feedback);
+        toast.error(feedback);
       }
 
       if (count >= CAPTURE_LIMIT) {
         clearCaptureTimer();
         stopCamera();
+        setCaptureFeedback("");
         toast.success("Face capture complete");
+      } else if (attempts >= MAX_CAPTURE_ATTEMPTS) {
+        clearCaptureTimer();
+        stopCamera();
+        setCaptureFeedback(
+          "Capture stopped because the image quality was not good enough. Please try again.",
+        );
+        toast.error(
+          "Capture stopped. Please retake with a steady face and clear lighting.",
+        );
       }
     }, CAPTURE_INTERVAL_MS);
   };
@@ -290,6 +319,11 @@ function ReregisterFace() {
               <p className="text-muted-foreground text-sm mb-2">
                 Captured Images: {capturedImages.length}/{CAPTURE_LIMIT}
               </p>
+              {captureFeedback ? (
+                <p className="text-muted-foreground text-sm mb-2">
+                  {captureFeedback}
+                </p>
+              ) : null}
               <div className="grid grid-cols-3 gap-2">
                 {Array.from({ length: CAPTURE_LIMIT }).map((_, index) => (
                   <button

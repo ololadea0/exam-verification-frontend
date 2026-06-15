@@ -4,7 +4,7 @@ import { Camera, CheckCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { registerStudent, reset } from "../slices/studentSlice";
 import FACULTIES from "../constants/faculties";
-import captureCompressedImage from "../utils/captureImage";
+import { captureQualityCheckedImage } from "../utils/captureImage";
 
 const emptyForm = {
   first_name: "",
@@ -16,6 +16,7 @@ const emptyForm = {
 
 const CAPTURE_LIMIT = 5;
 const CAPTURE_INTERVAL_MS = 2000;
+const MAX_CAPTURE_ATTEMPTS = 12;
 
 const capitalizeNamePart = (value) =>
   value
@@ -48,6 +49,7 @@ function RegisterStudent() {
 
   const [formData, setFormData] = useState(emptyForm);
   const [capturedImages, setCapturedImages] = useState([]);
+  const [captureFeedback, setCaptureFeedback] = useState("");
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const selectedFaculty = FACULTIES.find(
@@ -73,6 +75,7 @@ function RegisterStudent() {
   const resetCapture = useCallback(() => {
     clearCaptureTimer();
     setCapturedImages([]);
+    setCaptureFeedback("");
     setIsCapturing(false);
   }, [clearCaptureTimer]);
 
@@ -108,8 +111,10 @@ function RegisterStudent() {
       }
 
       setIsCameraReady(true);
+      return true;
     } catch {
       toast.error("Unable to access camera. Please allow camera permission.");
+      return false;
     }
   };
 
@@ -121,33 +126,57 @@ function RegisterStudent() {
       return null;
     }
 
-    return captureCompressedImage(video, canvas);
+    return captureQualityCheckedImage(video, canvas);
   };
 
   const startAutoCapture = async () => {
     if (!isCameraReady) {
-      await startCamera();
+      const started = await startCamera();
+
+      if (!started) {
+        return;
+      }
     }
 
     clearCaptureTimer();
     setCapturedImages([]);
+    setCaptureFeedback("Hold steady while the camera checks image quality.");
     setIsCapturing(true);
 
     let count = 0;
+    let attempts = 0;
     captureTimerRef.current = setInterval(() => {
-      const image = captureImage();
+      const capture = captureImage();
+      attempts += 1;
 
-      if (image) {
+      if (capture?.quality?.isAcceptable) {
         count += 1;
-        setCapturedImages((prevImages) =>
-          [...prevImages, image].slice(0, CAPTURE_LIMIT),
+        setCaptureFeedback(
+          `Accepted frame ${count}/${CAPTURE_LIMIT}. Keep the face steady.`,
         );
+        setCapturedImages((prevImages) =>
+          [...prevImages, capture.image].slice(0, CAPTURE_LIMIT),
+        );
+      } else if (capture?.quality?.issues?.length) {
+        const feedback = capture.quality.issues[0];
+        setCaptureFeedback(feedback);
+        toast.error(feedback);
       }
 
       if (count >= CAPTURE_LIMIT) {
         clearCaptureTimer();
         stopCamera();
+        setCaptureFeedback("");
         toast.success("Face capture complete");
+      } else if (attempts >= MAX_CAPTURE_ATTEMPTS) {
+        clearCaptureTimer();
+        stopCamera();
+        setCaptureFeedback(
+          "Capture stopped because the image quality was not good enough. Please try again.",
+        );
+        toast.error(
+          "Capture stopped. Please retake with a steady face and clear lighting.",
+        );
       }
     }, CAPTURE_INTERVAL_MS);
   };
@@ -203,193 +232,198 @@ function RegisterStudent() {
       <form className="space-y-6" onSubmit={onSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-card rounded-lg shadow-sm border border-border p-6">
-          <h3 className="text-foreground mb-4">Student Information</h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label
-                  className="block text-foreground mb-2"
-                  htmlFor="first_name"
-                >
-                  First Name
-                </label>
-                <input
-                  id="first_name"
-                  name="first_name"
-                  type="text"
-                  className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                  value={formData.first_name}
-                  onChange={onChange}
-                  onBlur={(event) =>
-                    setFormData((prevState) => ({
-                      ...prevState,
-                      first_name: capitalizeNamePart(event.target.value),
-                    }))
-                  }
-                />
+            <h3 className="text-foreground mb-4">Student Information</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    className="block text-foreground mb-2"
+                    htmlFor="first_name"
+                  >
+                    First Name
+                  </label>
+                  <input
+                    id="first_name"
+                    name="first_name"
+                    type="text"
+                    className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                    value={formData.first_name}
+                    onChange={onChange}
+                    onBlur={(event) =>
+                      setFormData((prevState) => ({
+                        ...prevState,
+                        first_name: capitalizeNamePart(event.target.value),
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label
+                    className="block text-foreground mb-2"
+                    htmlFor="last_name"
+                  >
+                    Last Name
+                  </label>
+                  <input
+                    id="last_name"
+                    name="last_name"
+                    type="text"
+                    className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                    value={formData.last_name}
+                    onChange={onChange}
+                    onBlur={(event) =>
+                      setFormData((prevState) => ({
+                        ...prevState,
+                        last_name: capitalizeNamePart(event.target.value),
+                      }))
+                    }
+                  />
+                </div>
               </div>
               <div>
                 <label
                   className="block text-foreground mb-2"
-                  htmlFor="last_name"
+                  htmlFor="matric_number"
                 >
-                  Last Name
+                  Matric Number
                 </label>
                 <input
-                  id="last_name"
-                  name="last_name"
+                  id="matric_number"
+                  name="matric_number"
                   type="text"
                   className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   required
-                  value={formData.last_name}
+                  value={formData.matric_number}
                   onChange={onChange}
-                  onBlur={(event) =>
-                    setFormData((prevState) => ({
-                      ...prevState,
-                      last_name: capitalizeNamePart(event.target.value),
-                    }))
-                  }
                 />
               </div>
-            </div>
-            <div>
-              <label
-                className="block text-foreground mb-2"
-                htmlFor="matric_number"
-              >
-                Matric Number
-              </label>
-              <input
-                id="matric_number"
-                name="matric_number"
-                type="text"
-                className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                required
-                value={formData.matric_number}
-                onChange={onChange}
-              />
-            </div>
-            <div>
-              <label className="block text-foreground mb-2" htmlFor="faculty">
-                Faculty
-              </label>
-              <select
-                id="faculty"
-                name="faculty"
-                className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                required
-                value={formData.faculty}
-                onChange={onChange}
-              >
-                <option value="">Select faculty</option>
-                {FACULTIES.map((faculty) => (
-                  <option value={faculty.name} key={faculty.name}>
-                    {faculty.name}
+              <div>
+                <label className="block text-foreground mb-2" htmlFor="faculty">
+                  Faculty
+                </label>
+                <select
+                  id="faculty"
+                  name="faculty"
+                  className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                  value={formData.faculty}
+                  onChange={onChange}
+                >
+                  <option value="">Select faculty</option>
+                  {FACULTIES.map((faculty) => (
+                    <option value={faculty.name} key={faculty.name}>
+                      {faculty.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  className="block text-foreground mb-2"
+                  htmlFor="department"
+                >
+                  Department
+                </label>
+                <select
+                  id="department"
+                  name="department"
+                  className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                  required
+                  disabled={!selectedFaculty}
+                  value={formData.department}
+                  onChange={onChange}
+                >
+                  <option value="">
+                    {selectedFaculty
+                      ? "Select department"
+                      : "Select faculty first"}
                   </option>
-                ))}
-              </select>
+                  {selectedFaculty?.departments.map((department) => (
+                    <option value={department} key={department}>
+                      {department}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label
-                className="block text-foreground mb-2"
-                htmlFor="department"
-              >
-                Department
-              </label>
-              <select
-                id="department"
-                name="department"
-                className="w-full px-4 py-2.5 bg-input-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                required
-                disabled={!selectedFaculty}
-                value={formData.department}
-                onChange={onChange}
-              >
-                <option value="">
-                  {selectedFaculty
-                    ? "Select department"
-                    : "Select faculty first"}
-                </option>
-                {selectedFaculty?.departments.map((department) => (
-                  <option value={department} key={department}>
-                    {department}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
           </div>
           <div className="bg-card rounded-lg shadow-sm border border-border p-6">
-          <h3 className="text-foreground mb-4">Face Capture</h3>
-          <div className="space-y-4">
-            <div className="relative bg-muted rounded-lg overflow-hidden aspect-video border border-border">
-              <video
-                ref={videoRef}
-                className={`h-full w-full object-cover ${
-                  isCameraReady ? "opacity-100" : "opacity-0"
-                }`}
-                playsInline
-                muted
-              />
-              {!isCameraReady ? (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                  <Camera className="w-16 h-16" />
+            <h3 className="text-foreground mb-4">Face Capture</h3>
+            <div className="space-y-4">
+              <div className="relative bg-muted rounded-lg overflow-hidden aspect-video border border-border">
+                <video
+                  ref={videoRef}
+                  className={`h-full w-full object-cover ${
+                    isCameraReady ? "opacity-100" : "opacity-0"
+                  }`}
+                  playsInline
+                  muted
+                />
+                {!isCameraReady ? (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <Camera className="w-16 h-16" />
+                  </div>
+                ) : null}
+                <canvas ref={canvasRef} className="hidden" />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={startAutoCapture}
+                  disabled={isCapturing || isLoading}
+                  className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCapturing ? "Capturing..." : "Start Auto Capture"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetCapture}
+                  disabled={isLoading}
+                  className="px-4 py-2.5 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
+                  aria-label="Reset captured images"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </button>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm mb-2">
+                  Captured Images: {capturedImages.length}/{CAPTURE_LIMIT}
+                </p>
+                {captureFeedback ? (
+                  <p className="text-muted-foreground text-sm mb-2">
+                    {captureFeedback}
+                  </p>
+                ) : null}
+                <div className="grid grid-cols-3 gap-2">
+                  {Array.from({ length: CAPTURE_LIMIT }).map((_, index) => (
+                    <button
+                      type="button"
+                      className="aspect-square bg-muted rounded-lg overflow-hidden border border-border"
+                      key={index}
+                      disabled
+                      aria-label={`Captured image ${index + 1}`}
+                    >
+                      {capturedImages[index] ? (
+                        <div className="relative h-full">
+                          <img
+                            src={capturedImages[index]}
+                            alt={`Captured student face ${index + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          <CheckCircle className="absolute right-2 top-2 w-5 h-5 text-primary bg-card rounded-full" />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          <Camera className="w-6 h-6" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
-              ) : null}
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={startAutoCapture}
-                disabled={isCapturing || isLoading}
-                className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCapturing ? "Capturing..." : "Start Auto Capture"}
-              </button>
-              <button
-                type="button"
-                onClick={resetCapture}
-                disabled={isLoading}
-                className="px-4 py-2.5 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
-                aria-label="Reset captured images"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm mb-2">
-                Captured Images: {capturedImages.length}/{CAPTURE_LIMIT}
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {Array.from({ length: CAPTURE_LIMIT }).map((_, index) => (
-                  <button
-                    type="button"
-                    className="aspect-square bg-muted rounded-lg overflow-hidden border border-border"
-                    key={index}
-                    disabled
-                    aria-label={`Captured image ${index + 1}`}
-                  >
-                    {capturedImages[index] ? (
-                      <div className="relative h-full">
-                        <img
-                          src={capturedImages[index]}
-                          alt={`Captured student face ${index + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                        <CheckCircle className="absolute right-2 top-2 w-5 h-5 text-primary bg-card rounded-full" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        <Camera className="w-6 h-6" />
-                      </div>
-                    )}
-                  </button>
-                ))}
               </div>
             </div>
-          </div>
           </div>
         </div>
         <button
