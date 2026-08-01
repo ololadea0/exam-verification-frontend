@@ -7,7 +7,8 @@ const getErrorMessage = (error) => {
     return "Verification exceeded the 10-second processing limit. Please try again.";
   }
 
-  const details = error?.response?.data?.details || error?.response?.data?.debug;
+  const details =
+    error?.response?.data?.details || error?.response?.data?.debug;
   const message =
     error?.response?.data?.message ||
     error.message ||
